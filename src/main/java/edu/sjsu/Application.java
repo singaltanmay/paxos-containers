@@ -10,16 +10,33 @@ import edu.sjsu.entity.Register;
 import edu.sjsu.role.Proposer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 
+import java.util.Random;
+
 @SpringBootApplication
 public class Application {
 
+    public static PAXOS_ROLES applicationPaxosRole;
+
     public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
+        ConfigurableApplicationContext applicationContext = SpringApplication.run(Application.class, args);
+
+        String paxosRoleArg = System.getProperty("role");
+        PAXOS_ROLES[] paxosRoles = PAXOS_ROLES.values();
+        if (paxosRoleArg != null && !paxosRoleArg.isBlank()) {
+            for (PAXOS_ROLES paxosRole : paxosRoles) {
+                if (paxosRole.equals(paxosRoleArg.toUpperCase())) {
+                    applicationPaxosRole = paxosRole;
+                    break;
+                }
+            }
+        }
+        if (applicationPaxosRole == null) applicationPaxosRole = paxosRoles[new Random().nextInt(paxosRoles.length)];
 
         // Register with router as soon as application is started
         Retrofit retrofit = RetrofitClient.getRetrofitInstance();
@@ -29,16 +46,16 @@ public class Application {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 System.out.println("Registered with code : " + response.code());
+                Proposer proposer = new Proposer();
+                proposer.sendPrepareMessage("Dog");
             }
 
             @Override
             public void onFailure(Call<Void> call, Throwable throwable) {
-                System.err.println("Failed to send register");
+                System.err.println("Failed to register with the router. Shutting down.");
+                SpringApplication.exit(applicationContext);
             }
         });
-
-        Proposer proposer = new Proposer();
-        proposer.sendPrepareMessage("Dog");
     }
 
     public enum PAXOS_ROLES {PROPOSER, ACCEPTOR, LEARNER}
