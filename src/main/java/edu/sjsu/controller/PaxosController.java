@@ -20,5 +20,4 @@ public class PaxosController {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
-
 }
