@@ -7,7 +7,9 @@ package edu.sjsu;
 import edu.sjsu.api.RetrofitClient;
 import edu.sjsu.api.Router;
 import edu.sjsu.entity.Register;
-import edu.sjsu.role.Proposer;
+import edu.sjsu.service.ProposerService;
+import java.util.Random;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -17,14 +19,14 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 
-import java.util.Random;
-
 @SpringBootApplication
 public class Application {
 
   public static PAXOS_ROLES applicationPaxosRole;
 
   public static String ROUTER_BASE_URL;
+
+  public static String PAXOS_SOURCE_UUID = UUID.randomUUID().toString();
 
   public static void main(String[] args) {
     ConfigurableApplicationContext applicationContext = SpringApplication.run(Application.class, args);
@@ -52,7 +54,7 @@ public class Application {
       @Override
       public void onResponse(Call<Void> call, Response<Void> response) {
         System.out.println("Registered with code : " + response.code());
-        Proposer proposer = new Proposer();
+        ProposerService proposer = new ProposerService();
         proposer.sendPrepareMessage("Dog");
       }
 

@@ -4,6 +4,7 @@
 
 package edu.sjsu.entity;
 
+import edu.sjsu.Application;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -11,22 +12,47 @@ import lombok.ToString;
 @ToString
 public class PaxosMessage {
 
-    @Getter
-    @Setter
-    long id;
+  @Getter
+  @Setter
+  long id;
 
-    @Getter
-    @Setter
-    PAXOS_MESSAGE_TYPE messageType;
+  @Getter
+  @Setter
+  PAXOS_MESSAGE_TYPE messageType;
 
-    @Getter
-    @Setter
-    String value;
+  @Getter
+  @Setter
+  String value;
 
-    public enum PAXOS_MESSAGE_TYPE {PROPOSAL}
+  @Getter
+  String messageSource = Application.PAXOS_SOURCE_UUID;
 
-    public PaxosMessage(PAXOS_MESSAGE_TYPE messageType, String value) {
-        this.messageType = messageType;
-        this.value = value;
-    }
+  @Getter
+  @Setter
+  String messageDestination;
+
+  public PaxosMessage(long id, PAXOS_MESSAGE_TYPE messageType, String value, String messageDestination) {
+    this.id = id;
+    this.messageType = messageType;
+    this.value = value;
+    this.messageDestination = messageDestination;
+  }
+
+  public PaxosMessage(long id, PAXOS_MESSAGE_TYPE messageType, String value) {
+    this.id = id;
+    this.messageType = messageType;
+    this.value = value;
+  }
+
+  public PaxosMessage(PAXOS_MESSAGE_TYPE messageType, String value) {
+    this.messageType = messageType;
+    this.value = value;
+  }
+
+  public static PaxosMessage respondTo(PaxosMessage incoming, PAXOS_MESSAGE_TYPE messageType) {
+    return new PaxosMessage(incoming.getId(), messageType, incoming.getValue(), incoming.getMessageSource());
+  }
+
+  public enum PAXOS_MESSAGE_TYPE {PROMISE, ACCEPT_REQUEST, PROPOSAL}
+
 }
