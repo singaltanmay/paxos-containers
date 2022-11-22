@@ -56,7 +56,7 @@ public class Application {
 
             @Override
             public void onFailure(Call<Void> call, Throwable throwable) {
-                System.err.println("Failed to register with the router. Shutting down.");
+                System.err.println("Failed to register with the router at "+ call.request().url() +". Shutting down.");
                 SpringApplication.exit(applicationContext);
             }
         });
