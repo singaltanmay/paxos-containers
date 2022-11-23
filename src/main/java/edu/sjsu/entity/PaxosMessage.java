@@ -33,6 +33,26 @@ public class PaxosMessage {
   @Setter
   String messageDestination;
 
+  @Getter
+  @Setter
+  int numProposers;
+
+  @Getter
+  @Setter
+  int numAcceptors;
+
+  @Getter
+  @Setter
+  int numLearners;
+
+  @Getter
+  boolean ignore;
+
+  public PaxosMessage setIgnore(boolean ignore) {
+    this.ignore = ignore;
+    return this;
+  }
+
   public PaxosMessage(long id, PAXOS_MESSAGE_TYPE messageType, String value, String messageDestination) {
     this.id = id;
     this.messageType = messageType;

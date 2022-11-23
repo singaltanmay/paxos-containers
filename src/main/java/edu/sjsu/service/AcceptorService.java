@@ -19,7 +19,7 @@ public class AcceptorService {
 
   private static final Logger LOGGER = LogManager.getLogger(AcceptorService.class);
   private final Router router;
-  long highestIdAcceptedSoFar = -1;
+  long highestIDSeenSoFar = -1;
 
   public AcceptorService() {
     Retrofit retrofit = RetrofitClient.getRetrofitInstance();
@@ -37,20 +37,25 @@ public class AcceptorService {
   }
 
   private void promise(PaxosMessage proposal) {
-    // Assume everything checks out
-    // Send back a PROMISE
     final long proposalId = proposal.getId();
-    if (proposalId > highestIdAcceptedSoFar) {
-      // Respond with a promiseMessage
-      highestIdAcceptedSoFar = proposalId;
-      PaxosMessage promiseMessage = new PaxosMessage(proposalId, PAXOS_MESSAGE_TYPE.PROMISE, proposal.getValue(), proposal.getMessageSource());
-      RetrofitClient.sendPaxosMessage(router, promiseMessage, Optional.of(() -> LOGGER.info("Sent promiseMessage " + promiseMessage + " for proposal " + proposal)));
-    } // else ignore
+    if (proposalId <= highestIDSeenSoFar) {
+      RetrofitClient.sendPaxosMessage(router, proposal.setIgnore(true), Optional.of(() -> LOGGER.info("Ignored proposal message: " + proposal + " as its ID is lower than the highest seen so far: " + highestIDSeenSoFar)));
+      return;
+    }
+
+    // Respond with a promiseMessage
+    highestIDSeenSoFar = proposalId;
+    PaxosMessage promiseMessage = new PaxosMessage(proposalId, PAXOS_MESSAGE_TYPE.PROMISE, proposal.getValue(), proposal.getMessageSource());
+    RetrofitClient.sendPaxosMessage(router, promiseMessage, Optional.of(() -> LOGGER.info("Sent promiseMessage " + promiseMessage + " for proposal " + proposal)));
   }
 
   // Acceptor accepts a value
   private void accept(PaxosMessage acceptRequest) {
-    // TODO if everything checks out (IDvise)
+    // A proposal from a higher ID is being considered
+    if (acceptRequest.getId() < highestIDSeenSoFar) {
+      RetrofitClient.sendPaxosMessage(router, acceptRequest.setIgnore(true), Optional.of(() -> LOGGER.info("Ignored accept message: " + acceptRequest + " as its ID is lower than the highest seen so far: " + highestIDSeenSoFar)));
+      return;
+    }
     final PaxosMessage acceptMessage = PaxosMessage.respondTo(acceptRequest, PAXOS_MESSAGE_TYPE.ACCEPT);
     RetrofitClient.sendPaxosMessage(router, acceptMessage, Optional.of(() -> LOGGER.info("Sent acceptMessage " + acceptMessage + " for value " + acceptRequest.getValue())));
   }
