@@ -8,57 +8,51 @@ import edu.sjsu.api.RetrofitClient;
 import edu.sjsu.api.Router;
 import edu.sjsu.entity.PaxosMessage;
 import edu.sjsu.entity.PaxosMessage.PAXOS_MESSAGE_TYPE;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 import retrofit2.Retrofit;
 
 @Service
 public class AcceptorService {
 
-  private static final Logger logger = LogManager.getLogger(AcceptorService.class);
-
-  long highestIdAcceptedSoFar = -1;
-
+  private static final Logger LOGGER = LogManager.getLogger(AcceptorService.class);
   private final Router router;
+  long highestIdAcceptedSoFar = -1;
 
   public AcceptorService() {
     Retrofit retrofit = RetrofitClient.getRetrofitInstance();
     router = retrofit.create(Router.class);
   }
 
-
   public void incoming(PaxosMessage message) {
+    LOGGER.info("Received new " + message.getMessageType().toString() + ": " + message);
     // Proposer has sent a proposal
     if (message.getMessageType() == PAXOS_MESSAGE_TYPE.PROPOSAL) {
-      handleProposal(message);
+      promise(message);
+    } else if (message.getMessageType() == PAXOS_MESSAGE_TYPE.ACCEPT_REQUEST) {
+      accept(message);
     }
   }
 
-  private void handleProposal(PaxosMessage proposal) {
+  private void promise(PaxosMessage proposal) {
     // Assume everything checks out
     // Send back a PROMISE
-    highestIdAcceptedSoFar = proposal.getId();
-    PaxosMessage promise = new PaxosMessage(proposal.getId(), PAXOS_MESSAGE_TYPE.PROMISE, proposal.getValue(), proposal.getMessageSource());
-    sendPromiseMessage(promise);
+    final long proposalId = proposal.getId();
+    if (proposalId > highestIdAcceptedSoFar) {
+      // Respond with a promiseMessage
+      highestIdAcceptedSoFar = proposalId;
+      PaxosMessage promiseMessage = new PaxosMessage(proposalId, PAXOS_MESSAGE_TYPE.PROMISE, proposal.getValue(), proposal.getMessageSource());
+      RetrofitClient.sendPaxosMessage(router, promiseMessage, Optional.of(() -> LOGGER.info("Sent promiseMessage " + promiseMessage + " for proposal " + proposal)));
+    } // else ignore
   }
 
-  private void sendPromiseMessage(PaxosMessage promise) {
-    Call<Void> call = router.sendMessage(promise);
-    call.enqueue(new Callback<>() {
-      @Override
-      public void onResponse(Call<Void> call, Response<Void> response) {
-        logger.info("Sent Promise: " + promise + "\n Received response code: " + response.code());
-      }
-
-      @Override
-      public void onFailure(Call<Void> call, Throwable throwable) {
-        logger.info("Failed to send Promise: " + promise);
-      }
-    });
+  // Acceptor accepts a value
+  private void accept(PaxosMessage acceptRequest) {
+    // TODO if everything checks out (IDvise)
+    final PaxosMessage acceptMessage = PaxosMessage.respondTo(acceptRequest, PAXOS_MESSAGE_TYPE.ACCEPT);
+    RetrofitClient.sendPaxosMessage(router, acceptMessage, Optional.of(() -> LOGGER.info("Sent acceptMessage " + acceptMessage + " for value " + acceptRequest.getValue())));
   }
 
 }

@@ -38,13 +38,8 @@ public class PaxosMessage {
     this.messageDestination = messageDestination;
   }
 
-  public PaxosMessage(long id, PAXOS_MESSAGE_TYPE messageType, String value) {
-    this.id = id;
-    this.messageType = messageType;
-    this.value = value;
-  }
-
   public PaxosMessage(PAXOS_MESSAGE_TYPE messageType, String value) {
+    this.id = System.currentTimeMillis();
     this.messageType = messageType;
     this.value = value;
   }
@@ -53,6 +48,6 @@ public class PaxosMessage {
     return new PaxosMessage(incoming.getId(), messageType, incoming.getValue(), incoming.getMessageSource());
   }
 
-  public enum PAXOS_MESSAGE_TYPE {PROMISE, ACCEPT_REQUEST, PROPOSAL}
+  public enum PAXOS_MESSAGE_TYPE {PROMISE, ACCEPT_REQUEST, ACCEPT, PROPOSAL}
 
 }

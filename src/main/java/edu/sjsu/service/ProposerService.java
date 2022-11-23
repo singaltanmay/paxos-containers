@@ -11,14 +11,16 @@ import edu.sjsu.api.RetrofitClient;
 import edu.sjsu.api.Router;
 import edu.sjsu.entity.PaxosMessage;
 import edu.sjsu.entity.PaxosMessage.PAXOS_MESSAGE_TYPE;
+import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 import retrofit2.Retrofit;
 
 @Service
 public class ProposerService {
+
+  private static final Logger LOGGER = LogManager.getLogger(ProposerService.class);
 
   private final Router router;
 
@@ -27,34 +29,24 @@ public class ProposerService {
     router = retrofit.create(Router.class);
   }
 
-  /**
-   * First step in Paxos. Send a new PREPARE message to {@link AcceptorService}
-   */
-  public PaxosMessage sendPrepareMessage(String value) {
-    PaxosMessage message = new PaxosMessage(System.currentTimeMillis(), PROPOSAL, value);
-    Call<Void> call = router.sendMessage(message);
-    call.enqueue(new Callback<>() {
-      @Override
-      public void onResponse(Call<Void> call, Response<Void> response) {
-        System.out.println("Proposed value " + message + " and got code : " + response.code());
-      }
-
-      @Override
-      public void onFailure(Call<Void> call, Throwable throwable) {
-        System.err.println("Failed to send message " + message);
-      }
-    });
-    return message;
+  // TODO implement in router broadcast to all acceptors
+  public void propose(String value) {
+    // Send prepare acceptMessage
+    PaxosMessage acceptMessage = new PaxosMessage(PROPOSAL, value);
+    RetrofitClient.sendPaxosMessage(router, acceptMessage, Optional.of(() -> LOGGER.info("Sent proposal for value " + value)));
   }
 
-  private void sendAcceptRequestMessage(PaxosMessage message) {
-
+  // TODO implement in router broadcast to all acceptors
+  // TODO only send this when accept request received from a MAJORITY of acceptors
+  private void acceptRequest(PaxosMessage promise) {
+    final PaxosMessage acceptRequestMessage = PaxosMessage.respondTo(promise, PAXOS_MESSAGE_TYPE.ACCEPT_REQUEST);
+    RetrofitClient.sendPaxosMessage(router, acceptRequestMessage, Optional.of(() -> LOGGER.info("Sent Accept-Request message to all proposers for proposed value " + promise.getValue())));
   }
 
   public void incoming(PaxosMessage message) {
     if (message.getMessageType() == PROMISE) {
-      final PaxosMessage response = PaxosMessage.respondTo(message, PAXOS_MESSAGE_TYPE.ACCEPT_REQUEST);
-      sendAcceptRequestMessage(response);
+      // TODO if MAJORITY have sent promise
+      acceptRequest(message);
     }
   }
 }

@@ -7,9 +7,10 @@ package edu.sjsu;
 import edu.sjsu.api.RetrofitClient;
 import edu.sjsu.api.Router;
 import edu.sjsu.entity.Register;
-import edu.sjsu.service.ProposerService;
 import java.util.Random;
 import java.util.UUID;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -22,6 +23,7 @@ import retrofit2.Retrofit;
 @SpringBootApplication
 public class Application {
 
+  private static final Logger LOGGER = LogManager.getLogger(Application.class);
   public static PAXOS_ROLES applicationPaxosRole;
 
   public static String ROUTER_BASE_URL;
@@ -44,7 +46,7 @@ public class Application {
     if (applicationPaxosRole == null) {
       applicationPaxosRole = paxosRoles[new Random().nextInt(paxosRoles.length)];
     }
-    System.out.println("Application started and assumed the role of " + applicationPaxosRole);
+    LOGGER.info("Application started and assumed the role of " + applicationPaxosRole);
 
     // Register with router as soon as application is started
     Retrofit retrofit = RetrofitClient.getRetrofitInstance();
@@ -53,14 +55,12 @@ public class Application {
     call.enqueue(new Callback<>() {
       @Override
       public void onResponse(Call<Void> call, Response<Void> response) {
-        System.out.println("Registered with code : " + response.code());
-        ProposerService proposer = new ProposerService();
-        proposer.sendPrepareMessage("Dog");
+        LOGGER.info("Registered with code : " + response.code());
       }
 
       @Override
       public void onFailure(Call<Void> call, Throwable throwable) {
-        System.err.println("Failed to register with the router at " + call.request().url() + ". Shutting down.");
+        LOGGER.debug("Failed to register with the router at " + call.request().url() + ". Shutting down.");
         SpringApplication.exit(applicationContext);
       }
     });
