@@ -18,17 +18,16 @@ import org.springframework.context.ConfigurableApplicationContext;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
 
 @SpringBootApplication
 public class Application {
 
   private static final Logger LOGGER = LogManager.getLogger(Application.class);
-  public static PAXOS_ROLES applicationPaxosRole;
+  public static PAXOS_ROLES APPLICATION_PAXOS_ROLE;
 
   public static String ROUTER_BASE_URL;
 
-  public static String PAXOS_SOURCE_UUID = UUID.randomUUID().toString();
+  public static String PAXOS_NODE_UUID = UUID.randomUUID().toString();
 
   public static void main(String[] args) {
     ConfigurableApplicationContext applicationContext = SpringApplication.run(Application.class, args);
@@ -38,24 +37,37 @@ public class Application {
     if (paxosRoleArg != null && !paxosRoleArg.isBlank()) {
       for (PAXOS_ROLES paxosRole : paxosRoles) {
         if (paxosRole.name().equals(paxosRoleArg.toUpperCase())) {
-          applicationPaxosRole = paxosRole;
+          APPLICATION_PAXOS_ROLE = paxosRole;
           break;
         }
       }
     }
-    if (applicationPaxosRole == null) {
-      applicationPaxosRole = paxosRoles[new Random().nextInt(paxosRoles.length)];
+    if (APPLICATION_PAXOS_ROLE == null) {
+      APPLICATION_PAXOS_ROLE = paxosRoles[new Random().nextInt(paxosRoles.length)];
     }
-    LOGGER.info("Application started and assumed the role of " + applicationPaxosRole);
+    LOGGER.info("Application started and assumed the role of " + APPLICATION_PAXOS_ROLE);
 
     // Register with router as soon as application is started
-    Retrofit retrofit = RetrofitClient.getRetrofitInstance();
-    Router router = retrofit.create(Router.class);
-    Call<Void> call = router.register(new Register(applicationPaxosRole));
+    registerWithRouter(RetrofitClient.getRetrofitInstance().create(Router.class), applicationContext, 3);
+  }
+
+  private static void registerWithRouter(Router router, ConfigurableApplicationContext applicationContext, int attempts) {
+    if (attempts < 1) {
+      LOGGER.debug("Unable to register with router. Exhausted registration attempts");
+      SpringApplication.exit(applicationContext);
+    }
+    final Register registerCall = new Register(APPLICATION_PAXOS_ROLE, PAXOS_NODE_UUID);
+    Call<Void> call = router.register(registerCall);
     call.enqueue(new Callback<>() {
       @Override
       public void onResponse(Call<Void> call, Response<Void> response) {
-        LOGGER.info("Registered with code : " + response.code());
+        if (response.isSuccessful()) {
+          LOGGER.info("Registered as " + PAXOS_NODE_UUID + " with code : " + response.code());
+        } else {
+          PAXOS_NODE_UUID = UUID.randomUUID().toString();
+          LOGGER.debug("Failed registration with router. Retrying with new UUID: " + PAXOS_NODE_UUID);
+          registerWithRouter(router, applicationContext, attempts - 1);
+        }
       }
 
       @Override

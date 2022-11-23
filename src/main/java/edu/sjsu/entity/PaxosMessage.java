@@ -6,10 +6,12 @@ package edu.sjsu.entity;
 
 import edu.sjsu.Application;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
 @ToString
+@NoArgsConstructor
 public class PaxosMessage {
 
   @Getter
@@ -25,7 +27,7 @@ public class PaxosMessage {
   String value;
 
   @Getter
-  String messageSource = Application.PAXOS_SOURCE_UUID;
+  String messageSource = Application.PAXOS_NODE_UUID;
 
   @Getter
   @Setter

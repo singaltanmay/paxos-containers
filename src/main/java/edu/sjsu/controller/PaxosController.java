@@ -30,8 +30,8 @@ public class PaxosController {
     this.learnerService = learnerService;
   }
 
-  @PostMapping
-  public void proposeValue(String value) {
+  @PostMapping("propose")
+  public void proposeValue(@RequestBody String value) {
     proposerService.propose(value);
   }
 

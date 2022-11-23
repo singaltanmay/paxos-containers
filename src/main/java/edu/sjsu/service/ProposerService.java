@@ -4,6 +4,7 @@
 
 package edu.sjsu.service;
 
+import static edu.sjsu.entity.PaxosMessage.PAXOS_MESSAGE_TYPE.ACCEPT;
 import static edu.sjsu.entity.PaxosMessage.PAXOS_MESSAGE_TYPE.PROMISE;
 import static edu.sjsu.entity.PaxosMessage.PAXOS_MESSAGE_TYPE.PROPOSAL;
 
@@ -47,6 +48,8 @@ public class ProposerService {
     if (message.getMessageType() == PROMISE) {
       // TODO if MAJORITY have sent promise
       acceptRequest(message);
+    } else if (message.getMessageType() == ACCEPT) {
+      LOGGER.info("Received ACCEPT for proposed value: " + message.getValue());
     }
   }
 }
