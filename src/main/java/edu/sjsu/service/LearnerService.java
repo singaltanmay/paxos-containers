@@ -15,7 +15,7 @@ public class LearnerService {
 
   private static final Logger LOGGER = LogManager.getLogger(LearnerService.class);
   @Getter
-  private String learned;
+  private static String learned;
 
   public void incoming(PaxosMessage message) {
     LOGGER.info("Received ACCEPT for proposed value: " + message.getValue());

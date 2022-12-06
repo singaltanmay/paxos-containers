@@ -57,11 +57,11 @@ public class PaxosController {
   }
 
   @GetMapping("value")
-  public ResponseEntity<String> getLearnedValue() {
+  public String getLearnedValue() {
     if (Application.APPLICATION_PAXOS_ROLE.equals(PAXOS_ROLES.LEARNER)) {
-      return ResponseEntity.ok(learnerService.getLearned());
+      return LearnerService.getLearned();
     }
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+    return null;
   }
 
 }
